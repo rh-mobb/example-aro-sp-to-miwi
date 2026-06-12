@@ -6,6 +6,7 @@ manifest changes (ServiceAccount annotation + pod label).
 """
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 
@@ -14,6 +15,7 @@ from azure.storage.blob import BlobServiceClient
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 STORAGE_ACCOUNT_URL = os.environ["AZURE_STORAGE_ACCOUNT_URL"]
 CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER", "demo-data")
@@ -67,8 +69,9 @@ def list_blobs():
         container_client = blob_service.get_container_client(CONTAINER_NAME)
         blobs = [b.name for b in container_client.list_blobs()]
         return jsonify({"source": "azure-blob-storage", "blobs": blobs})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Failed to list blobs")
+        return jsonify({"error": "Failed to list blobs"}), 500
 
 
 def _detect_auth_method() -> str:

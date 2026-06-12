@@ -8,6 +8,7 @@ During migration to an MI cluster, replace ClientSecretCredential with
 DefaultAzureCredential (see app.py for the migrated version).
 """
 
+import logging
 import os
 
 from azure.identity import ClientSecretCredential
@@ -15,6 +16,7 @@ from azure.keyvault.secrets import SecretClient
 from flask import Flask, jsonify
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 VAULT_URL = os.environ["AZURE_KEYVAULT_URL"]
 
@@ -40,8 +42,9 @@ def read_secret(name: str):
             "value": secret.value,
             "auth_method": "service-principal (ClientSecretCredential)",
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Failed to read secret %s", name)
+        return jsonify({"error": "Failed to read secret"}), 500
 
 
 if __name__ == "__main__":

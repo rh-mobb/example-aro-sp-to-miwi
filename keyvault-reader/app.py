@@ -4,6 +4,7 @@ Auto-detects workload identity via ServiceAccount — no secrets needed.
 See app_sp.py for the SP version that uses ClientSecretCredential.
 """
 
+import logging
 import os
 
 from azure.identity import DefaultAzureCredential
@@ -11,6 +12,7 @@ from azure.keyvault.secrets import SecretClient
 from flask import Flask, jsonify
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 VAULT_URL = os.environ["AZURE_KEYVAULT_URL"]
 
@@ -32,8 +34,9 @@ def read_secret(name: str):
             "value": secret.value,
             "auth_method": _detect_auth_method(),
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Failed to read secret %s", name)
+        return jsonify({"error": "Failed to read secret"}), 500
 
 
 def _detect_auth_method() -> str:
